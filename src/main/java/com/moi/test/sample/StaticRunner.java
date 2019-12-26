@@ -1,7 +1,7 @@
 package com.moi.test.sample;
 
 public class StaticRunner {
-    public static void run(int a, int b) {
+    public static void test(int a, int b) {
         switch (a) {
             case 0:
                 System.out.println("a == 0");

@@ -1,10 +1,9 @@
 package com.moi.japaco.test
 
-import com.moi.test.testall.TestAll
+import com.moi.test.testReturn.TestMultiReturn
 
 fun main() {
     LogGenerator().generate()
 
-    val testAll = TestAll()
-    testAll.testAll(0, 2)
+    TestMultiReturn.test(0, 1)
 }

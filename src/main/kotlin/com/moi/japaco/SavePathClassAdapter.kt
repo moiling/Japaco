@@ -1,8 +1,12 @@
 package com.moi.japaco
 
+import com.moi.japaco.config.DATA_CLASS
 import com.moi.japaco.config.END
 import com.moi.japaco.config.START
-import jdk.internal.org.objectweb.asm.*
+import jdk.internal.org.objectweb.asm.ClassVisitor
+import jdk.internal.org.objectweb.asm.Label
+import jdk.internal.org.objectweb.asm.MethodVisitor
+import jdk.internal.org.objectweb.asm.Opcodes
 
 class SavePathClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassVisitor(version, cv) {
     private var owner: String? = null
@@ -30,7 +34,7 @@ class SavePathClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassV
     inner class SavePathMethodAdapter(version: Int, mv: MethodVisitor?) : MethodVisitor(version, mv) {
 
         private fun addLabel(mv: MethodVisitor, text: String) {
-            mv.visitFieldInsn(Opcodes.GETSTATIC, "com/moi/test/Data", "array", "Ljava/util/ArrayList;")
+            mv.visitFieldInsn(Opcodes.GETSTATIC, DATA_CLASS, "array", "Ljava/util/ArrayList;")
             mv.visitLdcInsn(text)
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/ArrayList", "add", "(Ljava/lang/Object;)Z", false)
             mv.visitInsn(Opcodes.POP)

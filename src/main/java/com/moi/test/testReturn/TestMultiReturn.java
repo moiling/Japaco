@@ -1,16 +1,16 @@
 package com.moi.test.testReturn;
 
 public class TestMultiReturn {
-    public static void testMultiReturn(int a, int b) {
+    public static void test(int a, int b) {
         switch (a) {
             case 0:
-                System.out.println("a == 0");
+                System.out.println("a = 0");
                 break;
             case 1:
-                System.out.println("a == 1");
+                System.out.println("a = 1");
                 break;
             case 2:
-                System.out.println("a == 2");
+                System.out.println("a = 2");
                 break;
             default:
                 System.out.println("a != (0 or 1 or 2)");

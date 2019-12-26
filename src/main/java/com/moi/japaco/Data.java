@@ -1,4 +1,4 @@
-package com.moi.test;
+package com.moi.japaco;
 
 import java.util.ArrayList;
 

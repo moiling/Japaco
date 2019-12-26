@@ -10,13 +10,13 @@ import jdk.internal.org.objectweb.asm.Opcodes
 import java.util.*
 
 /*
- * allPaths: <method name, [path pairs]>
+ * allEdges: <method name, [path pairs]>
  *     eg: <"com/moi/Test.test", [<"L0", "L1">, <"L0", "l2">, ..., <"L4", "L5">]>
  */
 class AnalyzePathClassAdapter constructor(
     private var version: Int,
     cv: ClassVisitor?,
-    private var allPaths: MutableMap<String, ArrayList<Pair<Point, Point>>>
+    private var allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>
 ) : ClassVisitor(version, cv) {
 
     private var owner: String? = null
@@ -33,13 +33,13 @@ class AnalyzePathClassAdapter constructor(
         currentMethod = name
         // val newDesc = desc?.replaceBefore(')', "Ljava/util/ArrayList;")
         val mv: MethodVisitor? = cv.visitMethod(access, name, desc, signature, exceptions)
-        return if (isInterface) mv else AnalyzePathMethodAdapter(version, mv, allPaths)
+        return if (isInterface) mv else AnalyzePathMethodAdapter(version, mv, allEdges)
     }
 
     inner class AnalyzePathMethodAdapter(
         version: Int,
         mv: MethodVisitor?,
-        private var allPaths: MutableMap<String, ArrayList<Pair<Point, Point>>>
+        private var allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>
     ) : MethodVisitor(version, mv) {
 
         private var paths: ArrayList<Pair<Point, Point>> = ArrayList()
@@ -124,7 +124,7 @@ class AnalyzePathClassAdapter constructor(
         }
 
         override fun visitEnd() {
-            allPaths["$owner.$currentMethod"] = paths
+            allEdges["$owner.$currentMethod"] = paths
             mv.visitEnd()
         }
     }

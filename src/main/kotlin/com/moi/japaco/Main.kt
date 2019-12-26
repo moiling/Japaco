@@ -1,9 +1,7 @@
 package com.moi.japaco
 
-import com.moi.test.Data
 import com.moi.test.testReturn.TestMultiReturn
-import com.moi.test.testall.StaticTestAll
-import java.util.ArrayList
+import java.util.*
 
 data class TestCase(var a: Int, var b: Int)
 
@@ -22,7 +20,7 @@ fun main() {
         TestCase(3, 5)
     )
     val results = ArrayList<ArrayList<String>>()
-    val testFunc: (Int, Int) -> Unit = TestMultiReturn::testMultiReturn
+    val testFunc: (Int, Int) -> Unit = TestMultiReturn::test
 
     suites.forEach {
         testFunc(it.a, it.b)
