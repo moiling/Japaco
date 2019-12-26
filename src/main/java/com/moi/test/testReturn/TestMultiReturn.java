@@ -30,6 +30,10 @@ public class TestMultiReturn {
             }
         }
 
+        for (int i = 0; i < a; i++) {
+            System.out.println(i);
+        }
+
         if (a > b) {
             System.out.println("a > b");
         } else if (a < b) {

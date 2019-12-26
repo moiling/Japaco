@@ -20,7 +20,6 @@ class Analyzer {
         cr.accept(classAdapter, ClassReader.SKIP_DEBUG)
 
         val targets = getTargets(allEdges, "$className.$startMethod")
-        targets.forEach { println(it) }
 
         Reporter().report(allEdges)
     }
@@ -81,7 +80,7 @@ class Analyzer {
      */
     private fun findPaths(adjList: Array<ArrayList<Vertex>>, startIndex: Int, endIndex: Int):ArrayList<ArrayList<Int>> {
         val paths = ArrayList<ArrayList<Int>>()
-        val mainPaths = ArrayList<ArrayList<Int>>() // without circle
+        var mainPaths = ArrayList<ArrayList<Int>>() // without circle
         val circledPaths = HashSet<ArrayList<Int>>()
         val circledPoints = HashSet<Int>()
         val stack = Stack<Int>()
@@ -119,6 +118,8 @@ class Analyzer {
 
         }
 
+        paths.addAll(mainPaths)
+
         circledPoints.forEach { point ->
             mainPaths.filter { it.indexOf(point) != -1 }.forEach { main ->
                 circledPaths.filter { it.last() == point }.forEach {
@@ -128,9 +129,9 @@ class Analyzer {
                     paths.add(circledPath)
                 }
             }
+            mainPaths.clear()
+            mainPaths.addAll(paths)
         }
-
-        paths.addAll(mainPaths)
         return paths
     }
 

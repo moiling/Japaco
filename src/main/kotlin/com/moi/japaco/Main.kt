@@ -28,5 +28,7 @@ fun main() {
     }
 
     results.forEach { println(it) }
+
+    Estimator().handleCircleCoverages(results)
 }
 
