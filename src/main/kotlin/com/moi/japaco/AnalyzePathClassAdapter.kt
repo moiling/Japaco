@@ -1,26 +1,27 @@
 package com.moi.japaco
 
+import com.moi.japaco.config.END
+import com.moi.japaco.config.START
+import com.moi.japaco.data.Point
 import jdk.internal.org.objectweb.asm.ClassVisitor
 import jdk.internal.org.objectweb.asm.Label
 import jdk.internal.org.objectweb.asm.MethodVisitor
 import jdk.internal.org.objectweb.asm.Opcodes
-import java.util.ArrayList
+import java.util.*
 
-/**
+/*
  * allPaths: <method name, [path pairs]>
  *     eg: <"com/moi/Test.test", [<"L0", "L1">, <"L0", "l2">, ..., <"L4", "L5">]>
  */
-class AnalyzePathClassAdapter constructor(version: Int, cv: ClassVisitor?, allPaths: MutableMap<String, ArrayList<Pair<String, String>>>) : ClassVisitor(version, cv) {
+class AnalyzePathClassAdapter constructor(
+    private var version: Int,
+    cv: ClassVisitor?,
+    private var allPaths: MutableMap<String, ArrayList<Pair<Point, Point>>>
+) : ClassVisitor(version, cv) {
+
     private var owner: String? = null
     private var isInterface: Boolean = false
-    private var version: Int = Opcodes.ASM5
     private var currentMethod: String? = null
-    private var allPath: MutableMap<String, ArrayList<Pair<String, String>>>
-
-    init {
-        this.version = version
-        this.allPath = allPaths
-    }
 
     override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
         owner = name
@@ -32,46 +33,65 @@ class AnalyzePathClassAdapter constructor(version: Int, cv: ClassVisitor?, allPa
         currentMethod = name
         // val newDesc = desc?.replaceBefore(')', "Ljava/util/ArrayList;")
         val mv: MethodVisitor? = cv.visitMethod(access, name, desc, signature, exceptions)
-        return if (isInterface) mv else AnalyzePathMethodAdapter(version, mv, allPath)
+        return if (isInterface) mv else AnalyzePathMethodAdapter(version, mv, allPaths)
     }
 
-    inner class AnalyzePathMethodAdapter(version: Int, mv: MethodVisitor?, allPath: MutableMap<String, ArrayList<Pair<String, String>>>) : MethodVisitor(version, mv) {
+    inner class AnalyzePathMethodAdapter(
+        version: Int,
+        mv: MethodVisitor?,
+        private var allPaths: MutableMap<String, ArrayList<Pair<Point, Point>>>
+    ) : MethodVisitor(version, mv) {
 
-        private var paths: ArrayList<Pair<String, String>> = ArrayList()
-        private var currentLabel: Label? = null
+        private var paths: ArrayList<Pair<Point, Point>> = ArrayList()
+        private var displayNum: Int = 0
+        private var currentPoint: Point? = null
+        private var passedPoints: ArrayList<Point> = ArrayList()
 
-        /**
-         * 空：如果currentLabel为null，将新label设置为currentLabel，其他什么都不做
-         * 开始：visitCode时，将currentLabel置为start
-         * 顺接：有新的label了，和currentLabel组成一个pair，然后替换掉currentLabel
-         * 跳转：如果是非GOTO的跳转，就用跳转的label和currentLabel组成一个pair，不替换，因为还有一条分支要顺接
-         * GOTO: 如果是GOTO跳转，就用跳转的label和currentLabel组成一个pair，并清空currentLabel
-         * TABLESWITCH： 如果是SWITCH，用SWITCH的dflt和Labels的Label和currentLabel组成多个pairs，并用dflt替换currentLabel
-         * RETURN: 如果是RETURN，将currentLabel保存到一个returnLabels中，清空currentLabel
-         * 执行函数：如果执行函数，则将函数名作为label和顺接一样操作（判断是否是待测classPath中的函数），之后做多个图拼接
-         * 结束：如果visitEnd了，把returnLabels中的label和end标签组成多个pairs
+        /*
+         * START (when visitCode existed): set currentLabel as "START".
+         * NEW LABEL (if a new label is encountered):
+         * - if currentLabel isn't null: pair the new label with the currentLabel，and replace the currentLabel. (in-order)
+         * - if currentLabel is null: set currentLabel as label. (new branch)
+         * JUMP:
+         * - isn't GOTO: pair the jump target label with the currentLabel. DO NOT replace the currentLabel. (another branch will run in sequence)
+         * - GOTO: pair the jump target label with the currentLabel, and clear the currentLabel.
+         * SWITCH: use the default and other cases target label of switch to form multiple pairs with the currentLabel, and clear the currentLabel.
+         * RETURN: pair the "END" label with the currentLabel, and clear the currentLabel.
+         * TODO INVOKE: if method should be test(determine package name), pair the method name and the currentLabel, and replace the currentLabel.
          */
 
-        private fun addLabel(mv: MethodVisitor, text: String) {
-            mv.visitFieldInsn(Opcodes.GETSTATIC, "com/moi/test/Data", "array", "Ljava/util/ArrayList;")
-            mv.visitLdcInsn(text)
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/ArrayList", "add", "(Ljava/lang/Object;)Z", false)
-            mv.visitInsn(Opcodes.POP)
+        private fun getPoint(label: String?): Point {
+            val pointIndex = passedPoints.indexOfFirst { it.label == label }
+            if (pointIndex != -1) {
+                return passedPoints[pointIndex]
+            }
+            val display = if (label == START) START else if (label == END) END else "L${displayNum++}"
+            val newPoint = Point(owner, currentMethod, label, display)
+            passedPoints.add(newPoint)
+            return newPoint
+        }
+
+        private fun addPair(newPoint: Point): Point {
+            currentPoint?.let { paths.add(Pair(it, newPoint)) }
+            return newPoint
         }
 
         override fun visitLabel(label: Label?) {
             mv.visitLabel(label)
-            addLabel(mv, "$currentMethod.$label")
+            val newPoint = getPoint("$label")
+            addPair(newPoint)
+            currentPoint = newPoint
         }
 
         override fun visitCode() {
             mv.visitCode()
-            addLabel(mv, "$currentMethod.start")
+            currentPoint = getPoint(START)
         }
 
         override fun visitInsn(opcode: Int) {
             if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW) {
-                addLabel(mv, "$currentMethod.end")
+                addPair(getPoint(END))
+                currentPoint = null
             }
             mv.visitInsn(opcode)    // RETURN
         }
@@ -82,13 +102,29 @@ class AnalyzePathClassAdapter constructor(version: Int, cv: ClassVisitor?, allPa
 
         override fun visitTableSwitchInsn(min: Int, max: Int, dflt: Label?, vararg labels: Label?) {
             mv.visitTableSwitchInsn(min, max, dflt, *labels)
+            addPair(getPoint("$dflt"))
+            labels.forEach { addPair(getPoint("$it")) }
+            currentPoint = null
+        }
+
+        override fun visitLookupSwitchInsn(dflt: Label?, keys: IntArray?, labels: Array<out Label>?) {
+            mv.visitLookupSwitchInsn(dflt, keys, labels)
+            addPair(getPoint("$dflt"))
+            labels?.forEach { addPair(getPoint("$it")) }
+            currentPoint = null
         }
 
         override fun visitJumpInsn(opcode: Int, label: Label?) {
             mv.visitJumpInsn(opcode, label)
+            addPair(getPoint("$label"))
+
+            if (opcode == Opcodes.GOTO) {
+                currentPoint = null
+            }
         }
 
         override fun visitEnd() {
+            allPaths["$owner.$currentMethod"] = paths
             mv.visitEnd()
         }
     }

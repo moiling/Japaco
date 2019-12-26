@@ -1,5 +1,7 @@
 package com.moi.japaco
 
+import com.moi.japaco.config.END
+import com.moi.japaco.config.START
 import jdk.internal.org.objectweb.asm.*
 
 class SavePathClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassVisitor(version, cv) {
@@ -41,12 +43,12 @@ class SavePathClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassV
 
         override fun visitCode() {
             mv.visitCode()
-            addLabel(mv, "$owner.$currentMethod:start")
+            addLabel(mv, "$owner.$currentMethod:$START")
         }
 
         override fun visitInsn(opcode: Int) {
             if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW) {
-                addLabel(mv, "$owner.$currentMethod:end")
+                addLabel(mv, "$owner.$currentMethod:$END")
             }
             mv.visitInsn(opcode)    // RETURN
         }
