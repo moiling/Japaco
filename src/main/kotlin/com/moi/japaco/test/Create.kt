@@ -10,16 +10,16 @@ fun main(args: Array<String>) {
     val cw = ClassWriter(0)
 
     cw.visit(
-        Opcodes.V1_8,   // java version
+        Opcodes.V1_8,  // java version
         Opcodes.ACC_PUBLIC + Opcodes.ACC_ABSTRACT + Opcodes.ACC_INTERFACE,  // class modifier
-        "com/moi/Test",    // class name (full path)
-        null,   // signature
-        "java/lang/Object", // super name?
-        arrayOf("com/moi/Parent")   // interfaces
+        "com/moi/Test",  // class name (full path)
+        null,  // signature
+        "java/lang/Object",  // super name
+        arrayOf("com/moi/Parent")  // interfaces
     )
 
     cw.visitField(
-        Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,    // field modifier
+        Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,  // field modifier
         "LESS", // field name
         "I",    // field type, I = 'int'
         null,   // unknown
@@ -28,8 +28,8 @@ fun main(args: Array<String>) {
 
     cw.visitMethod(
         Opcodes.ACC_PUBLIC + Opcodes.ACC_ABSTRACT,  // method modifier
-        "compareTo",    // method name
-        "(Ljava/lang/Object;)I",    // input->Object, output->int
+        "compareTo",  // method name
+        "(Ljava/lang/Object;)I",  // input->Object, output->int
         null,   // unknown
         null    // unknown
     ).visitEnd()

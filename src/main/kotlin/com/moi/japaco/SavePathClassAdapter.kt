@@ -18,13 +18,26 @@ class SavePathClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassV
         this.version = version
     }
 
-    override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
+    override fun visit(
+        version: Int,
+        access: Int,
+        name: String?,
+        signature: String?,
+        superName: String?,
+        interfaces: Array<out String>?
+    ) {
         owner = name
         isInterface = (access and Opcodes.ACC_INTERFACE) != 0   // and -> &
         cv.visit(version, access, name, signature, superName, interfaces)
     }
 
-    override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<out String>?): MethodVisitor? {
+    override fun visitMethod(
+        access: Int,
+        name: String?,
+        desc: String?,
+        signature: String?,
+        exceptions: Array<out String>?
+    ): MethodVisitor? {
         currentMethod = name
         // val newDesc = desc?.replaceBefore(')', "Ljava/util/ArrayList;")
         val mv: MethodVisitor? = cv.visitMethod(access, name, desc, signature, exceptions)
@@ -54,7 +67,7 @@ class SavePathClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassV
             if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW) {
                 addLabel(mv, "$owner.$currentMethod:$END")
             }
-            mv.visitInsn(opcode)    // RETURN
+            mv.visitInsn(opcode)  // RETURN
         }
     }
 }

@@ -29,9 +29,9 @@ fun main() {
         results.add(Data.getArray())
     }
 
-    results.forEachIndexed { i, testCase->
+    results.forEachIndexed { i, testCase ->
         println("Test Case $i:")
-        testCase.forEach { text->
+        testCase.forEach { text ->
             print("${Point(text).label}")
             if (Point(text).label != "END") print("->")
         }
@@ -43,6 +43,19 @@ fun main() {
     tmpCirclePoints.add(results[0][3])
     // tmpCirclePoints.add(results[3][11])
 
-    Estimator().handleCircleCoverages(results, tmpCirclePoints)
+    val handledResults = Estimator().handleCircleCoverages(results, tmpCirclePoints)
+
+    println("-------")
+    handledResults.forEach {
+        it.forEachIndexed { i, testCase ->
+            println("Test Case $i:")
+            testCase.forEach { text ->
+                print("${Point(text).label}")
+                if (Point(text).label != "END") print("->")
+            }
+            println()
+        }
+    }
+
 }
 

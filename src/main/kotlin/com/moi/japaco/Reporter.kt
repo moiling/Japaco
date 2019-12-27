@@ -1,7 +1,7 @@
 package com.moi.japaco
 
 import com.moi.japaco.data.Point
-import java.util.ArrayList
+import java.util.*
 
 class Reporter {
 
@@ -9,7 +9,7 @@ class Reporter {
         println("graph TB")
         allPaths.forEach {
             println("subgraph ${it.key.split('.')[1]}")
-            it.value.forEach { p->
+            it.value.forEach { p ->
                 // <init> -> #lt#init#gt#
                 val fMethod = p.first.method?.replace("<", "#lt#")?.replace(">", "#gt#")
                 val sMethod = p.second.method?.replace("<", "#lt#")?.replace(">", "#gt#")

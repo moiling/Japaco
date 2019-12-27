@@ -24,7 +24,10 @@ class Analyzer {
         Reporter().report(allEdges)
     }
 
-    private fun getTargets(allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>, startMethod: String):ArrayList<ArrayList<Point>> {
+    private fun getTargets(
+        allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>,
+        startMethod: String
+    ): ArrayList<ArrayList<Point>> {
         // get number of points.
         val pointSet = HashSet<Point>()
         val targets = ArrayList<ArrayList<Point>>()
@@ -52,7 +55,7 @@ class Analyzer {
         val paths = findPaths(adjList, startIndex, endIndex)
         paths.forEach {
             val target = ArrayList<Point>()
-            it.forEach { index->
+            it.forEach { index ->
                 target.add(pointArray[index])
             }
             targets.add(target)
@@ -62,25 +65,32 @@ class Analyzer {
     }
 
     /*
-     * 从START的节点开始，将START入栈
+     * Start with 'START' point, push 'START' to the stack.
      * REPEAT:
-     * 当前栈顶元素是否是END
-     * - 不是END：能否在邻接表中找到栈顶元素的下一个节点(不在栈中且visited为False的节点)
-     *  - 能找到: 入栈，并将邻接表中当前栈顶元素对应的该节点的visited置为True，表示这条路当前访问过
-     *  - 找不到: 出栈，并把出栈的节点在邻接表中的所有下个节点的visited全置为False
-     * - 是END: 将栈输出，保存当前路径，出栈
-     * 直到栈为空时退出循环
+     * Whether the peek of stack element is 'END'?
+     * - Not 'END'：Whether find next point in the adjacency list?(NEED: the point isn't in the stack and unvisited)
+     *  - Found: Push the found point, set adjacency list[last peek][found point] as visited. Means this path is visited.
+     *  - Not found: Pop, and set adjacency list[pop point][:] as unvisited.
+     * - Is 'END: Save stack as a target path, then pop.
+     * UNTIL stack is empty.
      *
-     * 以上过程将非循环部分的路径找到，然后通过以下方式插入循环部分
-     * 如果找到栈顶元素的下一个节点'J'(visited为False，但在栈中)，表示遇到了循环
-     * 此时在栈中找'J'的位置，保存从'J'后一个元素到栈顶的数组，并在数组最后添加'J'(如果'J'就是栈顶，则数组中只有'J')
-     * 将这些数组保存起来，如Array<Array<Int>> => [<[A,B,J]>,<[C,J]>,<[D,K]>]
-     * 并保存有多少循环节[J,K]
-     * 然后在上面找到的所有路径上，找到'J'的位置，循环插入生成新的路径
+     * The algorithm above can ONLY find main paths(without circle path).
+     * Use the following algorithm to insert circle path:
+     * - If found the next point 'C' in the adjacency list which is unvisited BUT is IN THE STACK.(Means 'C' is the circle point)
+     *   - Find the position of 'C' in the stack,
+     *   - save the array form this position to the peek(circle path),
+     *   - then add 'C' at the end of array.(if 'C' is the peek, the array only has element 'C')
+     * - Save these circle paths, such as 'Array<Array<Int>> => [<[A,B,J]>,<[C,J]>,<[D,K]>]'
+     * - Save all circle points, such as [J,K]
+     * - Last, find the position of 'C' in all target paths computed in above, insert all circle paths.
      */
-    private fun findPaths(adjList: Array<ArrayList<Vertex>>, startIndex: Int, endIndex: Int):ArrayList<ArrayList<Int>> {
+    private fun findPaths(
+        adjList: Array<ArrayList<Vertex>>,
+        startIndex: Int,
+        endIndex: Int
+    ): ArrayList<ArrayList<Int>> {
         val paths = ArrayList<ArrayList<Int>>()
-        val mainPaths = ArrayList<ArrayList<Int>>() // without circle
+        val mainPaths = ArrayList<ArrayList<Int>>()  // without circle
         val circledPaths = HashSet<ArrayList<Int>>()
         val circledPoints = HashSet<Int>()
         val stack = Stack<Int>()
@@ -135,7 +145,7 @@ class Analyzer {
         return paths
     }
 
-    data class Vertex(var value:Int, var visited:Boolean)
+    data class Vertex(var value: Int, var visited: Boolean)
 }
 
 fun main() {

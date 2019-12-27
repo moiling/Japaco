@@ -11,7 +11,14 @@ class LogClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassVisito
         this.version = version
     }
 
-    override fun visit(version: Int, access: Int, name: String?, signature: String?, superName: String?, interfaces: Array<out String>?) {
+    override fun visit(
+        version: Int,
+        access: Int,
+        name: String?,
+        signature: String?,
+        superName: String?,
+        interfaces: Array<out String>?
+    ) {
         println("[Class:visit]:\n\t{version:$version, access:$access, name:$name, signature:$signature, superName:$superName, interfaces:$interfaces}")
         owner = name
         isInterface = (access and Opcodes.ACC_INTERFACE) != 0   // and -> &
@@ -23,7 +30,13 @@ class LogClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassVisito
         return cv.visitField(access, name, desc, signature, value)
     }
 
-    override fun visitMethod(access: Int, name: String?, desc: String?, signature: String?, exceptions: Array<out String>?): MethodVisitor? {
+    override fun visitMethod(
+        access: Int,
+        name: String?,
+        desc: String?,
+        signature: String?,
+        exceptions: Array<out String>?
+    ): MethodVisitor? {
         println("[Class:visitMethod]:\n\t{access:$access, name:$name, desc:$desc, signature:$signature, exceptions:$exceptions}")
         val mv: MethodVisitor? = cv.visitMethod(access, name, desc, signature, exceptions)
         return if (isInterface) mv else LogMethodAdapter(version, mv)
@@ -86,6 +99,7 @@ class LogClassAdapter constructor(version: Int, cv: ClassVisitor?) : ClassVisito
             println("[Method:visitTypeInsn]:\n\t{opcode:$opcode, owner:$owner}")
             mv.visitTypeInsn(opcode, owner)
         }
+
         override fun visitLabel(label: Label?) {
             println("[Method:visitLabel]:\n\t{label:$label}")
             mv.visitLabel(label)
