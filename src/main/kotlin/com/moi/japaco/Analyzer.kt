@@ -80,7 +80,7 @@ class Analyzer {
      */
     private fun findPaths(adjList: Array<ArrayList<Vertex>>, startIndex: Int, endIndex: Int):ArrayList<ArrayList<Int>> {
         val paths = ArrayList<ArrayList<Int>>()
-        var mainPaths = ArrayList<ArrayList<Int>>() // without circle
+        val mainPaths = ArrayList<ArrayList<Int>>() // without circle
         val circledPaths = HashSet<ArrayList<Int>>()
         val circledPoints = HashSet<Int>()
         val stack = Stack<Int>()

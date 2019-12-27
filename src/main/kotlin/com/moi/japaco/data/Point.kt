@@ -6,10 +6,10 @@ data class Point(
     var label: String?,
     var display: String?
 ) {
-    public constructor(text:String) : this(
+    constructor(text:String) : this(
         text.split('.')[0],
-        text.split('.')[0].split(':')[0],
-        text.split('.')[0].split(':')[1],
+        text.split('.')[1].split(':')[0],
+        text.split('.')[1].split(':')[1],
         ""
     )
 }

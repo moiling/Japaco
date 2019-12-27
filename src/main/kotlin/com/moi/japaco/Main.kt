@@ -1,13 +1,16 @@
 package com.moi.japaco
 
-import com.moi.test.testReturn.TestMultiReturn
+import com.moi.japaco.data.Point
+import com.moi.test.sample.StaticRunner
 import java.util.*
 
 data class TestCase(var a: Int, var b: Int)
 
 fun main() {
+    val className = "com/moi/test/sample/StaticRunner"
+    val testFunc: (Int, Int) -> Unit = StaticRunner::test
+
     val userDir = System.getProperty("user.dir")
-    val className = "com/moi/test/testReturn/TestMultiReturn"
     val fileURL = "$userDir/build/classes/java/main/$className.class"
     SavePathGenerator().generate(className, fileURL)
 
@@ -20,15 +23,26 @@ fun main() {
         TestCase(3, 5)
     )
     val results = ArrayList<ArrayList<String>>()
-    val testFunc: (Int, Int) -> Unit = TestMultiReturn::test
 
     suites.forEach {
         testFunc(it.a, it.b)
         results.add(Data.getArray())
     }
 
-    results.forEach { println(it) }
+    results.forEachIndexed { i, testCase->
+        println("Test Case $i:")
+        testCase.forEach { text->
+            print("${Point(text).label}")
+            if (Point(text).label != "END") print("->")
+        }
+        println()
+    }
 
-    Estimator().handleCircleCoverages(results)
+    // TODO: use true circle points
+    val tmpCirclePoints = mutableSetOf<String>()
+    tmpCirclePoints.add(results[0][3])
+    // tmpCirclePoints.add(results[3][11])
+
+    Estimator().handleCircleCoverages(results, tmpCirclePoints)
 }
 

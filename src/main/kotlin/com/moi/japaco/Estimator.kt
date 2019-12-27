@@ -1,5 +1,7 @@
 package com.moi.japaco
 
+import com.moi.japaco.data.Point
+
 class Estimator {
 
     /*
@@ -8,35 +10,56 @@ class Estimator {
      * coverage more than one path in circle -> coverage different paths.
      * - eg: [a, b, c, b, e, b, d] -> [a, b, c, b, d] + [a, b, e, b, d]
      */
-    // TODO ERROR CODE
-    fun handleCircleCoverages(coverages: ArrayList<ArrayList<String>>) {
-        val newCoverages = ArrayList<ArrayList<String>>()
+    fun handleCircleCoverages(coverages: ArrayList<ArrayList<String>>, circlePoints: Set<String>) {
+        val result = ArrayList<ArrayList<ArrayList<String>>>()
+
         coverages.forEach { c ->
-            val sameMap = mutableMapOf<String, Int>()   // <repeat label, repeat times>
-            c.forEach { with(sameMap[it]) { sameMap.put(it, if (this == null) 1 else this + 1) } }
-            // equals 2 means repeat once.
-            sameMap.filter { it.value > 2 }.forEach { map ->
-                val indices = ArrayList<Int>()
-                c.forEachIndexed { index, s ->
-                    if (s == map.key) indices.add(index)
+            var newCoverages = ArrayList<ArrayList<String>>()
+            val lastCoverages = ArrayList<ArrayList<String>>()
+            lastCoverages.add(c)
+
+            circlePoints.forEach { cp->
+                newCoverages.clear()
+                lastCoverages.forEach { current->
+                    if (current.count { it == cp } > 2) {  // for each circle points (equals 2 means repeat once).
+                        val indices = ArrayList<Int>()
+                        val unitCircleSet = mutableSetOf<MutableList<String>>()
+
+                        current.forEachIndexed { index, s -> if (s == cp) indices.add(index) }
+                        for (i in 1 until indices.size) {
+                            unitCircleSet.add(current.subList(indices[i - 1], indices[i]))
+                        }
+                        // use unit circle path to replace repeat circle path.
+                        // eg: repeat circle:['a', b, 'a', b, 'a'] -> unit circle:['a', b, 'a']
+                        //     repeat circle:['a', b, 'a', c, 'a'] -> unit circle:['a', b, 'a'] + ['a', c, 'a']
+                        unitCircleSet.forEach {
+                            val path = ArrayList<String>()
+                            path.addAll(current.subList(0, indices.first()))
+                            path.addAll(it)
+                            path.addAll(current.subList(indices.last(), current.lastIndex + 1))
+                            newCoverages.add(path)
+                        }
+                    } else {  // didn't run in circle or just run once.
+                        newCoverages.add(current)
+                    }
                 }
-                val circlePathSet = mutableSetOf<MutableList<String>>()
-                for (i in 1 until indices.size) {
-                    circlePathSet.add(c.subList(indices[i - 1], indices[i]))
+                lastCoverages.clear()
+                lastCoverages.addAll(newCoverages)
+            }
+            result.add(newCoverages)
+            newCoverages = ArrayList()
+        }
+
+        println("-------")
+        result.forEach {
+            it.forEachIndexed { i, testCase ->
+                println("Test Case $i:")
+                testCase.forEach { text->
+                    print("${Point(text).label}")
+                    if (Point(text).label != "END") print("->")
                 }
-                circlePathSet.forEach {
-                    val path = ArrayList<String>()
-                    path.addAll(c.subList(0, indices.first()))
-                    path.addAll(it)
-                    path.addAll(c.subList(indices.last(), c.lastIndex))
-                    newCoverages.add(path)
-                }
-                println(indices)
+                println()
             }
         }
-        // newCoverages.addAll(coverages)
-        println("-------")
-        newCoverages.forEach { println(it) }
     }
-
 }
