@@ -15,7 +15,8 @@ class Japaco(
 ) {
     private val allEdges = mutableMapOf<String, ArrayList<Pair<Point, Point>>>()
     private val analyzer = Analyzer()
-    private val reporter = Reporter()
+    private var reporter: Reporter? = null
+    private var evaluator: Evaluator? = null
 
     fun generate() {
         val className = startClass.replace('.', '/')
@@ -38,7 +39,7 @@ class Japaco(
         }
     }
 
-    fun test(suites: Array<BaseTestCase>, classObj: Any? = null): ArrayList<ArrayList<ArrayList<String>>> {
+    fun test(suites: Array<BaseTestCase>, classObj: Any? = null): Evaluator {
         val results = ArrayList<ArrayList<String>>()
         // !SHOULD NOT! load class before this.
         val method = Class.forName(startClass).methods.find { it.name == startMethod }
@@ -48,23 +49,15 @@ class Japaco(
             results.add(Data.getArray())
         }
 
-        val circledPoints = analyzer.getCircledPointsStr().toSet()
-
-        return Evaluator().handleCircleCoverages(results, circledPoints)
+        evaluator = Evaluator(analyzer, results)
+        evaluator?.evaluate()
+        return evaluator!!
     }
 
     fun report() {
         // report
-        reporter.report(allEdges)
+        reporter = Reporter(allEdges, evaluator)
+        reporter?.report()
 
-        val targets = analyzer.getTargets()
-
-        targets.forEach {
-            it.forEach { p ->
-                print(p.label)
-                if (p.label != "END") print("->")
-            }
-            println()
-        }
     }
 }

@@ -2,7 +2,6 @@ package com.moi.japaco
 
 import com.moi.japaco.data.BaseTestCase
 import com.moi.japaco.data.ISuiteCreator
-import com.moi.japaco.data.Point
 
 data class TestCase(val a: Int, val b: Int):BaseTestCase(arrayOf(a, b))
 
@@ -16,20 +15,9 @@ fun main() {
     // create test suites.
     val suites = TestSuiteCreator().createSuites()
     // run test suites.
-    val results = paco.test(suites)
+    val evaluator = paco.test(suites)
 
     paco.report()
-
-    results.forEach {
-        it.forEachIndexed { i, testCase ->
-            println("Test Case $i:")
-            testCase.forEach { text ->
-                print("${Point(text).label}")
-                if (Point(text).label != "END") print("->")
-            }
-            println()
-        }
-    }
 }
 
 class TestSuiteCreator : ISuiteCreator<BaseTestCase> {

@@ -1,10 +1,38 @@
 package com.moi.japaco
 
-class Evaluator {
+import com.moi.japaco.data.Point
 
-    fun evaluator() {
+class Evaluator(
+    private val analyzer: Analyzer,
+    private val suiteCoverages: ArrayList<ArrayList<String>>
+) {
+    private var targetCoverageState: ArrayList<Pair<ArrayList<Point>, Int>> = ArrayList()  // int -> coverage times
+    private var suiteCoverageState: ArrayList<ArrayList<Pair<ArrayList<Point>, Int>>> = ArrayList()  // int -> coverage target index
 
+    fun evaluate() {
+        val handledSuiteCoverages = handleCircleCoverages()
+        val targetCoverageTimes = Array(analyzer.getTargets().size) { 0 }
+
+        handledSuiteCoverages.forEach {
+            val caseCoverageState = ArrayList<Pair<ArrayList<Point>, Int>>()
+            it.forEach { s ->
+                for (t in analyzer.getTargets().withIndex()) {
+                    if (s deepEquals t.value) {
+                        caseCoverageState.add(Pair(t.value, t.index))
+                        targetCoverageTimes[t.index]++
+                        break
+                    }
+                }
+            }
+            suiteCoverageState.add(caseCoverageState)
+        }
+
+        // init target coverage state
+        analyzer.getTargets().forEachIndexed { index, it ->
+            targetCoverageState.add(Pair(it, targetCoverageTimes[index]))
+        }
     }
+
     /*
      * repeat -> save once.
      * eg: [a, 'b', c, 'b', c, 'b', d] -> [a, 'b', c, 'b', d]
@@ -18,12 +46,9 @@ class Evaluator {
      *     Case 1: [a, b, d]
      *     Case 2: [a, b, c, b, d]
      */
-    fun handleCircleCoverages(
-        suiteCoverages: ArrayList<ArrayList<String>>,
-        circlePoints: Set<String>
-    ): ArrayList<ArrayList<ArrayList<String>>> {
+    fun handleCircleCoverages(): ArrayList<ArrayList<ArrayList<String>>> {
         val result = ArrayList<ArrayList<ArrayList<String>>>()
-
+        val circledPoints = analyzer.getCircledPointsStr().toSet()
         // for each test case.
         suiteCoverages.forEach { c ->
             // Because of one test case may coverage more than one target,
@@ -39,7 +64,7 @@ class Evaluator {
             val lastCoverages = ArrayList<ArrayList<String>>()
             lastCoverages.add(c)
 
-            circlePoints.forEach { cp ->
+            circledPoints.forEach { cp ->
                 newCoverages.clear()
                 lastCoverages.forEach { current ->
                     if (current.count { it == cp } > 2) {  // for each circle points (equals 2 means repeat once).
@@ -72,5 +97,23 @@ class Evaluator {
         }
 
         return result
+    }
+
+    private infix fun ArrayList<String>.deepEquals(collection: ArrayList<Point>?): Boolean {
+        if (collection == null) return false
+        this.forEachIndexed { index, t ->
+            if (!collection[index].equals(t)) {
+                return false
+            }
+        }
+        return true
+    }
+
+    public fun getTargetCoverageState(): ArrayList<Pair<ArrayList<Point>, Int>> {
+        return this.targetCoverageState
+    }
+
+    public fun getSuiteCoverageState(): ArrayList<ArrayList<Pair<ArrayList<Point>, Int>>> {
+        return this.suiteCoverageState
     }
 }
