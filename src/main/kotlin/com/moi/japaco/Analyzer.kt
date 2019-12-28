@@ -3,25 +3,18 @@ package com.moi.japaco
 import com.moi.japaco.config.END
 import com.moi.japaco.config.START
 import com.moi.japaco.data.Point
-import jdk.internal.org.objectweb.asm.ClassReader
-import jdk.internal.org.objectweb.asm.ClassWriter
-import jdk.internal.org.objectweb.asm.Opcodes
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
 
 class Analyzer {
 
-    fun analyze(className: String, startMethod: String) {
-        val allEdges = mutableMapOf<String, ArrayList<Pair<Point, Point>>>()
-        val cr = ClassReader(className)
-        val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)
-        val classAdapter = AnalyzePathClassAdapter(Opcodes.ASM5, cw, allEdges)
-        cr.accept(classAdapter, ClassReader.SKIP_DEBUG)
+    private val circledPoints: HashSet<Int> = HashSet()
+    private var pointArray:Array<Point> = emptyArray()
+    private var targets: ArrayList<ArrayList<Point>> = ArrayList()
 
-        val targets = getTargets(allEdges, "$className.$startMethod")
-
-        Reporter().report(allEdges)
+    public fun analyze(startMethod: String, className: String, allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>) {
+        targets = getTargets(allEdges, "$className.$startMethod")
     }
 
     private fun getTargets(
@@ -37,7 +30,7 @@ class Analyzer {
                 pointSet.add(p.second)
             }
         }
-        val pointArray = pointSet.toTypedArray()
+        pointArray = pointSet.toTypedArray()
 
         // find START and END.
         val startIndex = pointArray.indexOfFirst { it.label == START }
@@ -92,7 +85,6 @@ class Analyzer {
         val paths = ArrayList<ArrayList<Int>>()
         val mainPaths = ArrayList<ArrayList<Int>>()  // without circle
         val circledPaths = HashSet<ArrayList<Int>>()
-        val circledPoints = HashSet<Int>()
         val stack = Stack<Int>()
         stack.push(startIndex)
 
@@ -145,10 +137,19 @@ class Analyzer {
         return paths
     }
 
-    data class Vertex(var value: Int, var visited: Boolean)
-}
+    public fun getCircledPointsStr(): HashSet<String> {
+        val result = HashSet<String>()
+        if (pointArray.isNotEmpty()) {
+            circledPoints.forEach {
+                result.add("${pointArray[it]}")
+            }
+        }
+        return result
+    }
 
-fun main() {
-    val className = "com/moi/test/testReturn/TestMultiReturn"
-    Analyzer().analyze(className, "test")
+    public fun getTargets(): ArrayList<ArrayList<Point>> {
+        return this.targets
+    }
+
+    data class Vertex(var value: Int, var visited: Boolean)
 }

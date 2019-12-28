@@ -1,7 +1,10 @@
 package com.moi.japaco
 
-class Estimator {
+class Evaluator {
 
+    fun evaluator() {
+
+    }
     /*
      * repeat -> save once.
      * eg: [a, 'b', c, 'b', c, 'b', d] -> [a, 'b', c, 'b', d]
@@ -16,16 +19,16 @@ class Estimator {
      *     Case 2: [a, b, c, b, d]
      */
     fun handleCircleCoverages(
-        coverages: ArrayList<ArrayList<String>>,
+        suiteCoverages: ArrayList<ArrayList<String>>,
         circlePoints: Set<String>
     ): ArrayList<ArrayList<ArrayList<String>>> {
         val result = ArrayList<ArrayList<ArrayList<String>>>()
 
         // for each test case.
-        coverages.forEach { c ->
+        suiteCoverages.forEach { c ->
             // Because of one test case may coverage more than one target,
-            // the number of coverages will changed for each circle points.
-            // So need use a extra list to save last coverages.
+            // the number of suiteCoverages will changed for each circle points.
+            // So need use a extra list to save last suiteCoverages.
             // eg: [a,'b',c,'b',d,'b','e','e','e',f]
             //     First circle point is 'b', the last is origin list [a,'b',c,'b',d,'b','e','e','e',f].
             //     Run algorithm, the new is [a,'b',c,'b','e','e','e',f] + [a,'b',d,'b','e','e','e',f].
