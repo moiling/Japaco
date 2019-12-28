@@ -3,18 +3,16 @@ package com.moi.japaco
 import com.moi.japaco.data.BaseTestCase
 import com.moi.japaco.data.ISuiteCreator
 
-data class TestCase(val a: Int, val b: Int):BaseTestCase(arrayOf(a, b))
-
 fun main() {
-    val className = "com.moi.test.sample.StaticRunner"
-    val methodName = "test"
+    val classPath = "${System.getProperty("user.dir")}/build/classes/java/main/"
+    val startClass = "com.moi.test.sample.Main"
+    val startMethod = "test"
 
-    val paco = Japaco(className, methodName, "${System.getProperty("user.dir")}/build/classes/java/main/")
-    // analyze and stub.
+    val paco = Japaco(startClass, startMethod, classPath)
     paco.generate()
-    // create test suites.
+
     val suites = TestSuiteCreator().createSuites()
-    // run test suites.
+
     val evaluator = paco.test(suites)
 
     paco.report()
@@ -24,12 +22,12 @@ class TestSuiteCreator : ISuiteCreator<BaseTestCase> {
 
     override fun createSuites(): Array<BaseTestCase> {
         return arrayOf(
-            TestCase(0, 1),
-            TestCase(1, 1),
-            TestCase(2, 0),
-            TestCase(3, 2),
-            TestCase(3, 4),
-            TestCase(3, 5)
+            BaseTestCase(arrayOf(0, 1, "Test 1")),
+            BaseTestCase(arrayOf(1, 1, "Test 2")),
+            BaseTestCase(arrayOf(2, 0, "Test 3")),
+            BaseTestCase(arrayOf(3, 2, "Test 4")),
+            BaseTestCase(arrayOf(3, 4, "Test 5")),
+            BaseTestCase(arrayOf(3, 5, "Test 6"))
         )
     }
 }

@@ -2,6 +2,7 @@ package com.moi.japaco
 
 import com.moi.japaco.config.DATA_CLASS
 import com.moi.japaco.config.END
+import com.moi.japaco.config.INVOKE_METHOD_LABEL
 import com.moi.japaco.config.START
 import com.moi.japaco.data.Point
 import jdk.internal.org.objectweb.asm.ClassVisitor
@@ -17,7 +18,8 @@ import java.util.*
 class PathClassAdapter constructor(
     private var version: Int,
     cv: ClassVisitor?,
-    private var allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>  // out
+    private var allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>,  // out
+    private var classNames: MutableList<String>
 ) : ClassVisitor(version, cv) {
 
     private var owner: String? = null
@@ -60,7 +62,7 @@ class PathClassAdapter constructor(
      * - GOTO: pair the jump target label with the currentLabel, and clear the currentLabel.
      * SWITCH: use the default and other cases target label of switch to form multiple pairs with the currentLabel, and clear the currentLabel.
      * RETURN: pair the "END" label with the currentLabel, and clear the currentLabel.
-     * TODO INVOKE: if method should be test(determine package name), pair the method name and the currentLabel, and replace the currentLabel.
+     * INVOKE: if method should be test(determine package name), pair the method name and the currentLabel, and replace the currentLabel.
      */
     inner class PathMethodAdapter(
         version: Int,
@@ -80,13 +82,25 @@ class PathClassAdapter constructor(
             mv.visitInsn(Opcodes.POP)
         }
 
-        private fun getPoint(label: String?): Point {
-            val pointIndex = passedPoints.indexOfFirst { it.label == label }
-            if (pointIndex != -1) {
-                return passedPoints[pointIndex]
+        private fun getPoint(label: String): Point {
+            if (!label.startsWith(INVOKE_METHOD_LABEL)) {
+                val pointIndex = passedPoints.indexOfFirst { it.label == label }
+                if (pointIndex != -1) {
+                    return passedPoints[pointIndex]
+                }
             }
-            val display = if (label == START) START else if (label == END) END else "L${displayNum++}"
-            val newPoint = Point(owner, currentMethod, label, display)
+            val display = when {
+                label == START -> START
+                label == END -> END
+                label.startsWith(INVOKE_METHOD_LABEL) -> "I${displayNum++}"
+                else -> "L${displayNum++}"
+            }
+
+            val newPoint = if (label.startsWith(INVOKE_METHOD_LABEL)) {
+                Point(label.split('.')[1], label.split('.')[2], INVOKE_METHOD_LABEL, display)
+            } else {
+                Point(owner, currentMethod, label, display)
+            }
             passedPoints.add(newPoint)
             return newPoint
         }
@@ -127,6 +141,11 @@ class PathClassAdapter constructor(
 
         override fun visitMethodInsn(opcode: Int, owner: String?, name: String?, desc: String?, p4: Boolean) {
             mv.visitMethodInsn(opcode, owner, name, desc, p4)
+            if (owner in classNames) {
+                val newPoint = getPoint("$INVOKE_METHOD_LABEL.$owner.$name")
+                addPair(newPoint)
+                currentPoint = newPoint
+            }
         }
 
         override fun visitTableSwitchInsn(min: Int, max: Int, dflt: Label?, vararg labels: Label?) {

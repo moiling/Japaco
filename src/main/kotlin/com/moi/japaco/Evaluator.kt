@@ -46,7 +46,7 @@ class Evaluator(
      *     Case 1: [a, b, d]
      *     Case 2: [a, b, c, b, d]
      */
-    fun handleCircleCoverages(): ArrayList<ArrayList<ArrayList<String>>> {
+    private fun handleCircleCoverages(): ArrayList<ArrayList<ArrayList<String>>> {
         val result = ArrayList<ArrayList<ArrayList<String>>>()
         val circledPoints = analyzer.getCircledPointsStr().toSet()
         // for each test case.

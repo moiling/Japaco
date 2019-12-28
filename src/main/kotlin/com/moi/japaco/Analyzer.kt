@@ -1,30 +1,83 @@
 package com.moi.japaco
 
 import com.moi.japaco.config.END
+import com.moi.japaco.config.INVOKE_METHOD_LABEL
 import com.moi.japaco.config.START
 import com.moi.japaco.data.Point
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashSet
 
-class Analyzer {
-
+class Analyzer(
+    private val startMethod: String,
+    private val startClass: String,
+    private val allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>
+) {
+    private val passedEdges = mutableMapOf<String, ArrayList<Pair<Point, Point>>>()
     private val circledPoints: HashSet<Int> = HashSet()
-    private var pointArray:Array<Point> = emptyArray()
+    private var pointArray: Array<Point> = emptyArray()
     private var targets: ArrayList<ArrayList<Point>> = ArrayList()
+    private val searchedMethod: ArrayList<String> = ArrayList()
 
-    public fun analyze(startMethod: String, className: String, allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>) {
-        targets = getTargets(allEdges, "$className.$startMethod")
+    public fun analyze() {
+        findPassedEdges("$startClass.$startMethod")  // out: passedEdges
+        // passedEdges.putAll(allEdges)
+        targets = findTargets()
     }
 
-    private fun getTargets(
-        allEdges: MutableMap<String, ArrayList<Pair<Point, Point>>>,
-        startMethod: String
-    ): ArrayList<ArrayList<Point>> {
+    private fun findPassedEdges(method: String): ArrayList<Pair<Point, Point>>? {
+        val edges: ArrayList<Pair<Point, Point>> = ArrayList()
+
+        // method is ignored.
+        if (allEdges[method] == null) return null
+
+        edges.addAll(allEdges[method]!!)
+        // for each invoke.
+        allEdges[method]!!.filter { it.first.label!! == INVOKE_METHOD_LABEL }.forEach { p ->
+            val invokeMethod = "${p.first.owner}.${p.first.method}"
+            val invokeMethodEdges: ArrayList<Pair<Point, Point>>?
+
+            // if the method is be searched -> get from passed edges.
+            if (searchedMethod.indexOfFirst { it == invokeMethod } == -1) {
+                invokeMethodEdges = findPassedEdges(invokeMethod)
+                invokeMethodEdges?.let { searchedMethod.add(invokeMethod) }
+            } else {
+                invokeMethodEdges = passedEdges[invokeMethod]!!
+            }
+
+            invokeMethodEdges?.let { ime ->
+                val invokeInFirst = ArrayList<Int>()
+                val invokeInSecond = ArrayList<Int>()
+                val invokeStart = ime.find { it.first.label == START }!!.first
+                val invokeEnd = ime.find { it.second.label == END }!!.second
+                // change invoke start and end.
+                for (e in edges.withIndex()) {
+                    if (e.value.first == p.first && e.value.first.display == p.first.display) {
+                        invokeInFirst.add(e.index)
+                    } else if (e.value.second == p.first && e.value.second.display == p.first.display) {
+                        invokeInSecond.add(e.index)
+                    }
+                }
+
+                invokeInFirst.forEach { f ->
+                    invokeInSecond.forEach { s ->
+                        edges[f] = Pair(invokeEnd, edges[f].second)
+                        edges[s] = Pair(edges[s].first, invokeStart)
+                    }
+                }
+            }
+        }
+
+        passedEdges[method] = edges
+        return edges
+    }
+
+    private fun findTargets(): ArrayList<ArrayList<Point>> {
         // get number of points.
         val pointSet = HashSet<Point>()
         val targets = ArrayList<ArrayList<Point>>()
-        allEdges.filter { it.key == startMethod }.forEach {
+
+        passedEdges.forEach {
             it.value.forEach { p ->
                 pointSet.add(p.first)
                 pointSet.add(p.second)
@@ -33,15 +86,18 @@ class Analyzer {
         pointArray = pointSet.toTypedArray()
 
         // find START and END.
-        val startIndex = pointArray.indexOfFirst { it.label == START }
-        val endIndex = pointArray.indexOfFirst { it.label == END }
+        val startIndex = pointArray.indexOfFirst { it.label == START && it.owner == startClass && it.method == startMethod }
+        val endIndex = pointArray.indexOfFirst { it.label == END && it.owner == startClass && it.method == startMethod }
 
         // create adjacency list(save value of pointArray, Bool:is visited).
         val adjList = Array<ArrayList<Vertex>>(pointArray.size) { ArrayList() }
 
-        allEdges.filter { it.key == startMethod }.forEach {
+        passedEdges.forEach {
             it.value.forEach { p ->
-                adjList[pointArray.indexOf(p.first)].add(Vertex(pointArray.indexOf(p.second), false))
+                // replace repeat
+                if (adjList[pointArray.indexOf(p.first)].find { a -> a.value == pointArray.indexOf(p.second) } == null) {
+                    adjList[pointArray.indexOf(p.first)].add(Vertex(pointArray.indexOf(p.second), false))
+                }
             }
         }
 
@@ -149,6 +205,10 @@ class Analyzer {
 
     public fun getTargets(): ArrayList<ArrayList<Point>> {
         return this.targets
+    }
+
+    public fun getPassedEdges(): MutableMap<String, ArrayList<Pair<Point, Point>>> {
+        return this.passedEdges
     }
 
     data class Vertex(var value: Int, var visited: Boolean)

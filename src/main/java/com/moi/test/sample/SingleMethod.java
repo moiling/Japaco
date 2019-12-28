@@ -1,6 +1,6 @@
 package com.moi.test.sample;
 
-public class StaticRunner {
+public class SingleMethod {
     public static void test(int a, int b) {
         switch (a) {
             case 0:

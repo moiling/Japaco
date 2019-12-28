@@ -11,32 +11,38 @@ import java.io.FileOutputStream
 class Japaco(
     private var startClass: String,
     private val startMethod: String,
-    private val classPathRoot: String
+    private val classPath: String
 ) {
-    private val allEdges = mutableMapOf<String, ArrayList<Pair<Point, Point>>>()
-    private val analyzer = Analyzer()
+    private var analyzer: Analyzer? = null
     private var reporter: Reporter? = null
     private var evaluator: Evaluator? = null
 
     fun generate() {
-        val className = startClass.replace('.', '/')
-        val fileURL = "$classPathRoot$className.class"
-        println(fileURL)
 
-        val cr = ClassReader(startClass)
-        val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)
-        val classAdapter = PathClassAdapter(Opcodes.ASM5, cw, allEdges)
-        cr.accept(classAdapter, ClassReader.SKIP_DEBUG)  // out: allEdges
+        val classNames = ClassDetector().detect(classPath)
+
+        val allEdges = mutableMapOf<String, ArrayList<Pair<Point, Point>>>()
+
+        classNames.forEach { className ->
+            val edges = mutableMapOf<String, ArrayList<Pair<Point, Point>>>()
+            val fileURL = "$classPath$className.class"
+            val cr = ClassReader(className)
+            val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)
+            val classAdapter = PathClassAdapter(Opcodes.ASM5, cw, edges, classNames)
+            cr.accept(classAdapter, ClassReader.SKIP_DEBUG)  // out: edges
+            allEdges.putAll(edges)
+
+            // save class file
+            val data = cw.toByteArray()
+            with(FileOutputStream(File(fileURL))) {
+                write(data)
+                close()
+            }
+        }
 
         // analyze
-        analyzer.analyze(startMethod, className, allEdges)
-
-        // save class file
-        val data = cw.toByteArray()
-        with(FileOutputStream(File(fileURL))) {
-            write(data)
-            close()
-        }
+        analyzer = Analyzer(startMethod, startClass.replace('.', '/'), allEdges)
+        analyzer!!.analyze()
     }
 
     fun test(suites: Array<BaseTestCase>, classObj: Any? = null): Evaluator {
@@ -49,15 +55,15 @@ class Japaco(
             results.add(Data.getArray())
         }
 
-        evaluator = Evaluator(analyzer, results)
-        evaluator?.evaluate()
+        evaluator = Evaluator(analyzer!!, results)
+        evaluator!!.evaluate()
         return evaluator!!
     }
 
     fun report() {
         // report
-        reporter = Reporter(allEdges, evaluator)
-        reporter?.report()
+        reporter = Reporter(analyzer!!.getPassedEdges(), evaluator)
+        reporter!!.report()
 
     }
 }
