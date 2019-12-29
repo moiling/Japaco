@@ -1,8 +1,8 @@
-package com.moi.japaco
+package com.moi.japaco.worker
 
-import com.moi.japaco.config.END
-import com.moi.japaco.config.INVOKE_METHOD_LABEL
-import com.moi.japaco.config.START
+import com.moi.japaco.config.LABEL_END
+import com.moi.japaco.config.LABEL_INVOKE_METHOD
+import com.moi.japaco.config.LABEL_START
 import com.moi.japaco.data.Point
 import java.util.*
 import kotlin.collections.ArrayList
@@ -19,12 +19,18 @@ class Analyzer(
     private var targets: ArrayList<ArrayList<Point>> = ArrayList()
     private val searchedMethod: ArrayList<String> = ArrayList()
 
-    public fun analyze() {
+    fun analyze() {
         findPassedEdges("$startClass.$startMethod")  // out: passedEdges
         // passedEdges.putAll(allEdges)
         targets = findTargets()
     }
 
+    /*
+     * Method A:L0->#INVOKE#:Method B->Method A:L1
+     * =>
+     * Method A:L0->Method B:LABEL_START->Method B:...->Method B:LABEL_END->Method A:L1
+     * (Method B is in the class path.)
+     */
     private fun findPassedEdges(method: String): ArrayList<Pair<Point, Point>>? {
         val edges: ArrayList<Pair<Point, Point>> = ArrayList()
 
@@ -33,7 +39,7 @@ class Analyzer(
 
         edges.addAll(allEdges[method]!!)
         // for each invoke.
-        allEdges[method]!!.filter { it.first.label!! == INVOKE_METHOD_LABEL }.forEach { p ->
+        allEdges[method]!!.filter { it.first.label!! == LABEL_INVOKE_METHOD }.forEach { p ->
             val invokeMethod = "${p.first.owner}.${p.first.method}"
             val invokeMethodEdges: ArrayList<Pair<Point, Point>>?
 
@@ -48,8 +54,8 @@ class Analyzer(
             invokeMethodEdges?.let { ime ->
                 val invokeInFirst = ArrayList<Int>()
                 val invokeInSecond = ArrayList<Int>()
-                val invokeStart = ime.find { it.first.label == START }!!.first
-                val invokeEnd = ime.find { it.second.label == END }!!.second
+                val invokeStart = ime.find { it.first.label == LABEL_START }!!.first
+                val invokeEnd = ime.find { it.second.label == LABEL_END }!!.second
                 // change invoke start and end.
                 for (e in edges.withIndex()) {
                     if (e.value.first == p.first && e.value.first.display == p.first.display) {
@@ -85,9 +91,9 @@ class Analyzer(
         }
         pointArray = pointSet.toTypedArray()
 
-        // find START and END.
-        val startIndex = pointArray.indexOfFirst { it.label == START && it.owner == startClass && it.method == startMethod }
-        val endIndex = pointArray.indexOfFirst { it.label == END && it.owner == startClass && it.method == startMethod }
+        // find LABEL_START and LABEL_END.
+        val startIndex = pointArray.indexOfFirst { it.label == LABEL_START && it.owner == startClass && it.method == startMethod }
+        val endIndex = pointArray.indexOfFirst { it.label == LABEL_END && it.owner == startClass && it.method == startMethod }
 
         // create adjacency list(save value of pointArray, Bool:is visited).
         val adjList = Array<ArrayList<Vertex>>(pointArray.size) { ArrayList() }
@@ -96,7 +102,12 @@ class Analyzer(
             it.value.forEach { p ->
                 // replace repeat
                 if (adjList[pointArray.indexOf(p.first)].find { a -> a.value == pointArray.indexOf(p.second) } == null) {
-                    adjList[pointArray.indexOf(p.first)].add(Vertex(pointArray.indexOf(p.second), false))
+                    adjList[pointArray.indexOf(p.first)].add(
+                        Vertex(
+                            pointArray.indexOf(p.second),
+                            false
+                        )
+                    )
                 }
             }
         }
@@ -114,13 +125,13 @@ class Analyzer(
     }
 
     /*
-     * Start with 'START' point, push 'START' to the stack.
+     * Start with 'LABEL_START' point, push 'LABEL_START' to the stack.
      * REPEAT:
-     * Whether the peek of stack element is 'END'?
-     * - Not 'END'：Whether find next point in the adjacency list?(NEED: the point isn't in the stack and unvisited)
+     * Whether the peek of stack element is 'LABEL_END'?
+     * - Not 'LABEL_END'：Whether find next point in the adjacency list?(NEED: the point isn't in the stack and unvisited)
      *  - Found: Push the found point, set adjacency list[last peek][found point] as visited. Means this path is visited.
      *  - Not found: Pop, and set adjacency list[pop point][:] as unvisited.
-     * - Is 'END: Save stack as a target path, then pop.
+     * - Is 'LABEL_END: Save stack as a target path, then pop.
      * UNTIL stack is empty.
      *
      * The algorithm above can ONLY find main paths(without circle path).
@@ -193,7 +204,7 @@ class Analyzer(
         return paths
     }
 
-    public fun getCircledPointsStr(): HashSet<String> {
+    fun getCircledPointsStr(): HashSet<String> {
         val result = HashSet<String>()
         if (pointArray.isNotEmpty()) {
             circledPoints.forEach {
@@ -203,12 +214,16 @@ class Analyzer(
         return result
     }
 
-    public fun getTargets(): ArrayList<ArrayList<Point>> {
+    fun getTargets(): ArrayList<ArrayList<Point>> {
         return this.targets
     }
 
-    public fun getPassedEdges(): MutableMap<String, ArrayList<Pair<Point, Point>>> {
+    fun getPassedEdges(): MutableMap<String, ArrayList<Pair<Point, Point>>> {
         return this.passedEdges
+    }
+
+    fun getPointArray(): Array<Point> {
+        return this.pointArray
     }
 
     data class Vertex(var value: Int, var visited: Boolean)

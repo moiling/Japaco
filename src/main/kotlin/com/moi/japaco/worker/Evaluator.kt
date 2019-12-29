@@ -1,4 +1,4 @@
-package com.moi.japaco
+package com.moi.japaco.worker
 
 import com.moi.japaco.data.Point
 
@@ -109,11 +109,26 @@ class Evaluator(
         return true
     }
 
-    public fun getTargetCoverageState(): ArrayList<Pair<ArrayList<Point>, Int>> {
+    fun getTargetCoverageState(): ArrayList<Pair<ArrayList<Point>, Int>> {
         return this.targetCoverageState
     }
 
-    public fun getSuiteCoverageState(): ArrayList<ArrayList<Pair<ArrayList<Point>, Int>>> {
+    fun getSuiteCoverageState(): ArrayList<ArrayList<Pair<ArrayList<Point>, Int>>> {
         return this.suiteCoverageState
+    }
+
+    fun getOriginalSuiteCoverages(): ArrayList<ArrayList<Point>> {
+        val result = ArrayList<ArrayList<Point>>()
+        suiteCoverages.forEach { case ->
+            val caseCoverage = ArrayList<Point>()
+
+            case.forEach { point ->
+                val p = analyzer.getPointArray().find { it.equals(point) }
+                p?.let { caseCoverage.add(it) }
+            }
+
+            result.add(caseCoverage)
+        }
+        return result
     }
 }

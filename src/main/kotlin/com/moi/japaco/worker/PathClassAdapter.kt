@@ -1,9 +1,9 @@
-package com.moi.japaco
+package com.moi.japaco.worker
 
-import com.moi.japaco.config.DATA_CLASS
-import com.moi.japaco.config.END
-import com.moi.japaco.config.INVOKE_METHOD_LABEL
-import com.moi.japaco.config.START
+import com.moi.japaco.config.CLASS_DATA
+import com.moi.japaco.config.LABEL_END
+import com.moi.japaco.config.LABEL_INVOKE_METHOD
+import com.moi.japaco.config.LABEL_START
 import com.moi.japaco.data.Point
 import jdk.internal.org.objectweb.asm.ClassVisitor
 import jdk.internal.org.objectweb.asm.Label
@@ -53,7 +53,7 @@ class PathClassAdapter constructor(
 
     /*
      * Code Analyze:
-     * START (when visitCode existed): set currentLabel as "START".
+     * LABEL_START (when visitCode existed): set currentLabel as "LABEL_START".
      * NEW LABEL (if a new label is encountered):
      * - if currentLabel isn't null: pair the new label with the currentLabel，and replace the currentLabel. (in-order)
      * - if currentLabel is null: set currentLabel as label. (new branch)
@@ -61,7 +61,7 @@ class PathClassAdapter constructor(
      * - isn't GOTO: pair the jump target label with the currentLabel. DO NOT replace the currentLabel. (another branch will run in sequence)
      * - GOTO: pair the jump target label with the currentLabel, and clear the currentLabel.
      * SWITCH: use the default and other cases target label of switch to form multiple pairs with the currentLabel, and clear the currentLabel.
-     * RETURN: pair the "END" label with the currentLabel, and clear the currentLabel.
+     * RETURN: pair the "LABEL_END" label with the currentLabel, and clear the currentLabel.
      * INVOKE: if method should be test(determine package name), pair the method name and the currentLabel, and replace the currentLabel.
      */
     inner class PathMethodAdapter(
@@ -76,28 +76,28 @@ class PathClassAdapter constructor(
         private var passedPoints: ArrayList<Point> = ArrayList()
 
         private fun addStub(mv: MethodVisitor, text: String) {
-            mv.visitFieldInsn(Opcodes.GETSTATIC, DATA_CLASS, "array", "Ljava/util/ArrayList;")
+            mv.visitFieldInsn(Opcodes.GETSTATIC, CLASS_DATA, "array", "Ljava/util/ArrayList;")
             mv.visitLdcInsn(text)
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/ArrayList", "add", "(Ljava/lang/Object;)Z", false)
             mv.visitInsn(Opcodes.POP)
         }
 
         private fun getPoint(label: String): Point {
-            if (!label.startsWith(INVOKE_METHOD_LABEL)) {
+            if (!label.startsWith(LABEL_INVOKE_METHOD)) {
                 val pointIndex = passedPoints.indexOfFirst { it.label == label }
                 if (pointIndex != -1) {
                     return passedPoints[pointIndex]
                 }
             }
             val display = when {
-                label == START -> START
-                label == END -> END
-                label.startsWith(INVOKE_METHOD_LABEL) -> "I${displayNum++}"
+                label == LABEL_START -> LABEL_START
+                label == LABEL_END -> LABEL_END
+                label.startsWith(LABEL_INVOKE_METHOD) -> "I${displayNum++}"
                 else -> "L${displayNum++}"
             }
 
-            val newPoint = if (label.startsWith(INVOKE_METHOD_LABEL)) {
-                Point(label.split('.')[1], label.split('.')[2], INVOKE_METHOD_LABEL, display)
+            val newPoint = if (label.startsWith(LABEL_INVOKE_METHOD)) {
+                Point(label.split('.')[1], label.split('.')[2], LABEL_INVOKE_METHOD, display)
             } else {
                 Point(owner, currentMethod, label, display)
             }
@@ -122,19 +122,19 @@ class PathClassAdapter constructor(
 
         override fun visitCode() {
             mv.visitCode()
-            currentPoint = getPoint(START)
+            currentPoint = getPoint(LABEL_START)
 
             // stub
-            addStub(mv, "$owner.$currentMethod:$START")
+            addStub(mv, "$owner.$currentMethod:$LABEL_START")
         }
 
         override fun visitInsn(opcode: Int) {
             if ((opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN) || opcode == Opcodes.ATHROW) {
-                addPair(getPoint(END))
+                addPair(getPoint(LABEL_END))
                 currentPoint = null
 
                 // stub
-                addStub(mv, "$owner.$currentMethod:$END")
+                addStub(mv, "$owner.$currentMethod:$LABEL_END")
             }
             mv.visitInsn(opcode)  // RETURN
         }
@@ -142,7 +142,7 @@ class PathClassAdapter constructor(
         override fun visitMethodInsn(opcode: Int, owner: String?, name: String?, desc: String?, p4: Boolean) {
             mv.visitMethodInsn(opcode, owner, name, desc, p4)
             if (owner in classNames) {
-                val newPoint = getPoint("$INVOKE_METHOD_LABEL.$owner.$name")
+                val newPoint = getPoint("$LABEL_INVOKE_METHOD.$owner.$name")
                 addPair(newPoint)
                 currentPoint = newPoint
             }

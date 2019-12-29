@@ -2,12 +2,13 @@ package com.moi.test.sample;
 
 import com.moi.test.otherpackage.Printer;
 
-public class Main {
+public class Multi {
     public static void test(int a, int b, String s) {
         System.out.println("================= This is " + s + " =================");
 
         Computer computer = new Computer(a, b);
         Printer p = new Printer();
+
         int c;
         switch (a) {
             case 0:
