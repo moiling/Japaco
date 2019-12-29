@@ -4,7 +4,7 @@ import com.moi.japaco.config.PACKAGE_JAPACO
 import java.io.File
 
 class ClassDetector(
-    private val ignorePackage:Array<String> = arrayOf(PACKAGE_JAPACO)
+    private val ignorePackage: Array<String> = arrayOf(PACKAGE_JAPACO)
 ) {
 
     fun detect(classPaths: Array<String>): MutableList<String> {

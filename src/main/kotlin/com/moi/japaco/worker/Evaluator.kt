@@ -117,7 +117,7 @@ class Evaluator(
         return this.suiteCoverageState
     }
 
-    fun getOriginalSuiteCoverages(): ArrayList<ArrayList<Point>> {
+    fun getOriginalSuitePath(): ArrayList<ArrayList<Point>> {
         val result = ArrayList<ArrayList<Point>>()
         suiteCoverages.forEach { case ->
             val caseCoverage = ArrayList<Point>()

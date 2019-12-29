@@ -13,7 +13,8 @@ fun main() {
     paco.generate()
     val suites = TestSuiteCreator().createSuites()
     val evaluator = paco.test(suites)
-    paco.report()
+
+    paco.report(evaluator, suites, "./out/${startClass.split('.').last()}_$startMethod.md", log = true)
 }
 
 class TestSuiteCreator {

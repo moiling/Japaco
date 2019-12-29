@@ -1,9 +1,6 @@
 package com.moi.japaco
 
-import com.moi.japaco.config.CLASS_DATA
-import com.moi.japaco.config.EXCEPTION_NO_PATH
-import com.moi.japaco.config.EXCEPTION_WRONG_TEST_CASE
-import com.moi.japaco.config.PACKAGE_JAPACO
+import com.moi.japaco.config.*
 import com.moi.japaco.data.Point
 import com.moi.japaco.worker.*
 import jdk.internal.org.objectweb.asm.ClassReader
@@ -21,6 +18,7 @@ class Japaco(
     private var analyzer: Analyzer? = null
     private var reporter: Reporter? = null
     private var evaluator: Evaluator? = null
+    private var suites: Array<Array<Any>>? = null
 
     fun generate() {
 
@@ -63,7 +61,7 @@ class Japaco(
 
 
         // Means: Data.clear() -> clear the path before here.
-        Class.forName(CLASS_DATA.replace('/', '.')).methods.find { it.name == "clear" }!!.invoke(null)
+        Class.forName(CLASS_DATA.replace('/', '.')).methods.find { it.name == METHOD_CLEAR }!!.invoke(null)
 
         suites.forEach {
             try {
@@ -72,7 +70,7 @@ class Japaco(
                 throw Exception(EXCEPTION_WRONG_TEST_CASE)
             }
             // Means: results.add(Data.getArray())
-            val path = Class.forName(CLASS_DATA.replace('/', '.')).methods.find { m -> m.name == "getArray" }!!.invoke(null)
+            val path = Class.forName(CLASS_DATA.replace('/', '.')).methods.find { m -> m.name == METHOD_GET_ARRAY }!!.invoke(null)
             if (path is ArrayList<*>) {
                 val point = ArrayList<String>()
                 path.filter { p -> p is String }.forEach { p ->
@@ -87,10 +85,10 @@ class Japaco(
         return evaluator!!
     }
 
-    fun report() {
+    fun report(evaluator: Evaluator, suites: Array<Array<Any>>, outFile: String, log: Boolean = false) {
         // report
-        reporter = Reporter(analyzer!!.getPassedEdges(), evaluator)
-        reporter!!.report()
+        reporter = Reporter(analyzer!!.getPassedEdges(), classPaths, ignorePackage, startClass, startMethod)
+        reporter!!.report(outFile, evaluator, suites, log)
 
     }
 }
