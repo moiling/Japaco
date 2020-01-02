@@ -18,7 +18,6 @@ class Japaco(
     private var analyzer: Analyzer? = null
     private var reporter: Reporter? = null
     private var evaluator: Evaluator? = null
-    private var suites: Array<Array<Any>>? = null
 
     fun generate() {
 

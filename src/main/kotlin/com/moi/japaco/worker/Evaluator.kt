@@ -49,6 +49,16 @@ class Evaluator(
     private fun handleCircleCoverages(): ArrayList<ArrayList<ArrayList<String>>> {
         val result = ArrayList<ArrayList<ArrayList<String>>>()
         val circledPoints = analyzer.getCircledPointsStr().toSet()
+        // do not have circle
+        if (circledPoints.isEmpty()) {
+            suiteCoverages.forEach {
+                val newCoverages = ArrayList<ArrayList<String>>()
+                newCoverages.add(it)
+                result.add(newCoverages)
+            }
+            return result
+        }
+
         // for each test case.
         suiteCoverages.forEach { c ->
             // Because of one test case may coverage more than one target,
