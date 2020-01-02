@@ -5,7 +5,7 @@ import com.moi.japaco.config.PACKAGE_JAPACO
 
 fun main() {
     val classPaths = arrayOf("${System.getProperty("user.dir")}/build/classes/java/main/")
-    val startClass = "com.moi.test.sample.Test"
+    val startClass = "com.moi.test.sample.Single"
     val startMethod = "test"
     val ignorePackage = arrayOf(PACKAGE_JAPACO)
 

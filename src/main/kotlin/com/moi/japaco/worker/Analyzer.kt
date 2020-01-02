@@ -74,6 +74,21 @@ class Analyzer(
             }
         }
 
+        // remove the point that haven't next.
+        edges.removeIf {
+            if (it.second.label == LABEL_END)
+                return@removeIf false
+            var needRemove = true
+            // find next
+            for (e in edges) {
+                if (it.second.label == e.first.label) {
+                    needRemove = false
+                    break
+                }
+            }
+            return@removeIf needRemove
+        }
+
         passedEdges[method] = edges
         return edges
     }

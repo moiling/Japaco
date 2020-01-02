@@ -58,7 +58,8 @@ class PathClassAdapter constructor(
      * - if currentLabel isn't null: pair the new label with the currentLabel，and replace the currentLabel. (in-order)
      * - if currentLabel is null: set currentLabel as label. (new branch)
      * JUMP:
-     * - isn't GOTO: pair the jump target label with the currentLabel. DO NOT replace the currentLabel. (another branch will run in sequence)
+     * - isn't GOTO: pair the jump target label with the currentLabel, and pair the "!jump target label"(means not jump) with the currentLabel.
+     *               set currentLabel as "!jump target label"
      * - GOTO: pair the jump target label with the currentLabel, and clear the currentLabel.
      * SWITCH: use the default and other cases target label of switch to form multiple pairs with the currentLabel, and clear the currentLabel.
      * RETURN: pair the "LABEL_END" label with the currentLabel, and clear the currentLabel.
@@ -165,10 +166,15 @@ class PathClassAdapter constructor(
         override fun visitJumpInsn(opcode: Int, label: Label?) {
             mv.visitJumpInsn(opcode, label)
             addPair(getPoint("$label"))
+            val newPoint = addPair(getPoint("!$label"))
 
             if (opcode == Opcodes.GOTO) {
                 currentPoint = null
+            } else {
+                currentPoint = newPoint
             }
+            // stub
+            addStub(mv, "$owner.$currentMethod:!$label")
         }
 
         override fun visitEnd() {
